@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { StorageService } from './../../services/storage.service';
-import { ApiService } from './../../services/api.service';
-import { Login } from './../../models/login';
+import { Router } from '@angular/router';
 
+import { StorageService } from './../../services/storage.service';
+import { AuthService } from './../../services/auth.service';
+import { Login } from './../../models/login';
 
 @Component({
   selector: 'app-login',
@@ -18,16 +19,21 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private api: ApiService,
-    private storage: StorageService
+    private auth: AuthService,
+    private storage: StorageService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
-    this.hasError = false;
-    this.form = this.fb.group({
-      username: ['', [Validators.required]],
-      password: ['', [Validators.required]]
-    });
+    if (this.auth.isAuth()) {
+      this.router.navigate(['/admin']);
+    } else {
+      this.hasError = false;
+      this.form = this.fb.group({
+        username: ['', [Validators.required]],
+        password: ['', [Validators.required]]
+      });
+    }
   }
 
   isValid(field: string): boolean {
@@ -44,8 +50,9 @@ export class LoginComponent implements OnInit {
       );
 
       if (login.isValid()) {
-        this.api.auth(login).subscribe( user => {
+        this.auth.auth(login).subscribe( user => {
           this.storage.create('_user', user);
+          this.router.navigate(['/admin']);
         }, ({ error }) => {
           if (error) {
             this.hasError = true;
